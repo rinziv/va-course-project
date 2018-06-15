@@ -2,7 +2,7 @@ import {VIEW, CHEMICAL, MONTH, SENSOR, DAYHOUR, LOGLINEAR, DATA, WINDDATA, STATS
 import {ALL, TEMPORAL, VECTORIAL} from "../constants";
 
 const initialState = {
-    view: TEMPORAL,
+    view: VECTORIAL,
     chemical: null,
     month: ALL,
     sensor: 1,

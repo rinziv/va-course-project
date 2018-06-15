@@ -18,10 +18,52 @@ import WindChartData from "../../wind-chart/data";
 import CircularHeatChart from "../../wind-chart/circular";
 import Statistics from "../../statistics";
 
+import D3Node from 'd3-node'
+import QuickMultiChart from "../../multi-group/quick-chart";
+
 class Plots extends Component {
 
+    static getContainer() {
+        return (
+            <div>
+                {/*<div>state: {text}</div>*/}
+                <div className="markdown-body">
+                    <table>
+                        <tbody>
+                        <tr>
+                            <td>
+                                <div className="plot-map"/>
+                            </td>
+                            <td>
+                                <div className="plot-wind"/>
+                                <div className="plot-sensor"/>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        )
+    }
+
+    static quickMultiChart (rows, winds, selector = '.plot-map') {
+
+        let container = this.getContainer();
+
+        let d3n = new D3Node({
+            selector,
+            container
+        });
+
+        let ch = new QuickMultiChart(d3n, selector, rows, winds);
+
+        return ch.d3n;
+    }
+
     vectorialViewDraw(rows, winds) {
+
         new MultiChart('.plot-map', rows, winds);
+        //Plots.quickMultiChart(rows, winds, '.plot-map');
 
         let wcd = (new WindChartData());
 
@@ -155,7 +197,11 @@ class Plots extends Component {
                         me.props.loadWindData(winds);
 
                         if (me.props.view === VECTORIAL) {
-                            me.vectorialViewDraw(rows, winds)
+                            //me.vectorialViewDraw(rows, winds)
+
+                            me.html = Plots.quickMultiChart(rows, winds, '.plot-map');
+                            console.log(me.html);
+
                         }
 
                     });
@@ -192,7 +238,7 @@ class Plots extends Component {
         }
     }
 
-    render = () => {
+    render_ = () => {
         let text = JSON.stringify(
             {
                 view: this.props.view,
@@ -284,26 +330,7 @@ class Plots extends Component {
             )
         }
 
-        return (
-            <div>
-                {/*<div>state: {text}</div>*/}
-                <div className="markdown-body">
-                    <table>
-                        <tbody>
-                            <tr>
-                                <td>
-                                    <div className="plot-map"/>
-                                </td>
-                                <td>
-                                    <div className="plot-wind"/>
-                                    <div className="plot-sensor"/>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        )
+        return Plots.getContainer();
     }
 }
 

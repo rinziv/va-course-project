@@ -4,11 +4,12 @@ import {ORANGE, RED, BLUE, GREEN} from './../constants'
 import {APP, CHL, MET, AGO} from './../constants'
 
 /**
- *
  * @see https://spin.atomicobject.com/2015/06/12/objects-around-svg-circle-d3-js/
  */
-export default class MultiChart {
-    constructor(selector, data, winddata, chemical = null, month = null) {
+export default class QuickMultiChart {
+    constructor(d3n, selector, data, winddata, chemical = null, month = null) {
+
+        this.d3n = d3n;
 
         this.chemical = chemical;
         this.month    = month;
@@ -47,11 +48,14 @@ export default class MultiChart {
         this.width  = 500 * 97/62;
         this.height = 500;
 
-        this.svg = select(selector)
-            .append("svg")
-            .attr('class', 'multi_chart')
-            .attr("width", this.width)
-            .attr("height",this.height);
+        // this.svg = this.d3n.d3.select(selector)
+        //     .append("svg")
+        //     .attr('class', 'multi_chart')
+        //     .attr("width", this.width)
+        //     .attr("height",this.height);
+
+
+        this.svg = d3n.createSVG(this.width, this.height);
 
         this.createScales()
             .pointFactories()
@@ -65,11 +69,11 @@ export default class MultiChart {
         const w = 80;
         const h = 100;
 
-        this.xScale = scaleLinear()
+        this.xScale = this.d3n.d3.scaleLinear()
             .domain([42, 139]) //97
             .range([0, this.width]);
 
-        this.yScale = scaleLinear()
+        this.yScale = this.d3n.d3.scaleLinear()
             .domain([-7, 55]) //62
             .range([this.height, 0]);
 
@@ -111,7 +115,7 @@ export default class MultiChart {
             .attr("fill-opacity", "0.8")
             .on("click", function(d) {
 
-                selectAll("line").remove();
+                this.d3n.d3.selectAll("line").remove();
                 chart.connectFactory(d);
             });
 
@@ -166,11 +170,11 @@ export default class MultiChart {
 
         let data = MultiChartData.getData(this.data, this.winddata);
 
-        const r = scaleLinear()
+        const r = this.d3n.d3.scaleLinear()
             .domain([0, 1])
             .range([10, 43]); //ToDo remove magic constant
 
-        const line = radialLine()
+        const line = this.d3n.d3.radialLine()
             .radius(function(d) { return r(d[1]); })
             .angle(function(d) { return Math.PI - d[0]; });
 
