@@ -20,33 +20,28 @@ import Statistics from "../../statistics";
 
 import D3Node from 'd3-node'
 import QuickMultiChart from "../../multi-group/quick-chart";
+import MultiChartData from "../../multi-group/data";
+
+import {ORANGE, RED, BLUE, GREEN} from './../../constants'
+import {APP, CHL, MET, AGO} from './../../constants'
 
 class Plots extends Component {
 
+    constructor()
+    {
+        super();
+        this.state = {
+            chartHtml: null
+        }
+    }
+
     static getContainer() {
-        return (
-            <div>
-                {/*<div>state: {text}</div>*/}
-                <div className="markdown-body">
-                    <table>
-                        <tbody>
-                        <tr>
-                            <td>
-                                <div className="plot-map"/>
-                            </td>
-                            <td>
-                                <div className="plot-wind"/>
-                                <div className="plot-sensor"/>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        )
+        return '<div><div class="markdown-body"><table><tbody><tr><td><div class="plot-map"/></td><td><div class="plot-wind"/><div class="plot-sensor"/></td></tr></tbody></table></div></div>';
     }
 
     static quickMultiChart (rows, winds, selector = '.plot-map') {
+
+        let chart = this;
 
         let container = this.getContainer();
 
@@ -55,15 +50,162 @@ class Plots extends Component {
             container
         });
 
-        let ch = new QuickMultiChart(d3n, selector, rows, winds);
+        let factories = [
+            [89, 27, 'Roadrunner'],
+            [90, 21, 'Kasios'],
+            [109, 26, 'Radiance'],
+            [120, 22, 'Indigo']
+        ];
 
-        return ch.d3n;
+        let centers = [
+            [62, 21],
+            [66, 35],
+            [76, 41],
+            [88, 45],
+            [103, 43],
+            [102, 22],
+            [89, 3],
+            [74, 7],
+            [119, 42]
+        ];
+
+        let width = 500 * 97/62;
+        let height = 500;
+
+        let svg = d3n.createSVG(width, height);
+
+        const w = 80;
+        const h = 100;
+
+        const colorMap = {};
+
+        colorMap[AGO] = ORANGE;
+        colorMap[APP] = RED;
+        colorMap[CHL] = BLUE;
+        colorMap[MET] = GREEN;
+
+        let xScale = d3n.d3.scaleLinear()
+            .domain([42, 139]) //97
+            .range([0, width]);
+
+        let yScale = d3n.d3.scaleLinear()
+            .domain([-7, 55]) //62
+            .range([height, 0]);
+
+        svg.selectAll(".circle")
+            .data(centers)
+            .enter().append("circle")
+            .attr("cx", function(d){return xScale(d[0])})
+            .attr("cy", function(d){return yScale(d[1])})
+            .attr("r", 45)
+            .attr("fill", "white")
+            .attr("fill-opacity", "0.9");
+
+        svg.selectAll(".circle")
+            .data(centers)
+            .enter().append("circle")
+            .attr("cx", function(d){return xScale(d[0])})
+            .attr("cy", function(d){return yScale(d[1])})
+            .attr("r", 10)
+            // .style("stroke", 'grey')
+            .style("fill", "none");
+        // .style("stroke-width", '2px');
+
+        svg.selectAll(".sensor-labels")
+            .data(centers)
+            .enter()
+            .append("text")
+            .attr('color', 'grey')
+            .attr('x', function(d){return xScale(d[0]) - 4})
+            .attr('y', function(d){return yScale(d[1]) + 4})
+            .text((d, i)=> i + 1);
+
+        svg.selectAll(".circle")
+            .data(factories)
+            .enter().append("circle")
+            .attr("cx", function(d){return xScale(d[0])})
+            .attr("cy", function(d){return yScale(d[1])})
+            .attr("r", 4)
+            .attr("fill", "black")
+            .attr("fill-opacity", "0.8")
+            .on("click", function(d) {
+
+                d3n.d3.selectAll("line").remove();
+
+                let [x, y] = d;
+
+                centers.forEach(function(entry) {
+
+                    let [centerX, centerY] = entry;
+
+                    svg.append("line")
+                        .style("stroke", "black")
+                        .attr("x1", xScale(parseFloat(x)))
+                        .attr("y1", yScale(parseFloat(y)))
+                        .attr("x2", xScale(parseFloat(centerX)))
+                        .attr("y2", yScale(parseFloat(centerY)));
+                });
+
+            });
+
+        svg.selectAll(".factory-labels")
+            .data(factories)
+            .enter()
+            .append("text")
+            .attr('color', 'grey')
+            .attr('x', function(d){return xScale(d[0]) + 8})
+            .attr('y', function(d){return yScale(d[1]) + 4})
+            .text((d, i)=> d[2]);
+
+        let data = MultiChartData.getData(rows, winds);
+
+        const r = d3n.d3.scaleLinear()
+            .domain([0, 1])
+            .range([10, 43]); //ToDo remove magic constant
+
+        const line = d3n.d3.radialLine()
+            .radius(function(d) { return r(d[1]); })
+            .angle(function(d) { return Math.PI - d[0]; });
+
+        centers.forEach(function(entry, i) {
+
+            let sel = svg.selectAll("point")
+                .data(data[i + 1])
+                .enter()
+                .append("circle");
+
+            // if(chart.chemical !== null) {
+            //     sel.filter(function(d) {
+            //         return d[2] === chart.chemical;
+            //     });
+            // }
+
+            sel.attr("class", "point")
+                .attr("transform", function (d) {
+
+                    const coors = line([d]).slice(1).slice(0, -1);
+
+                    let [centerX, centerY] = entry;
+                    let [x, y] = coors.split(',');
+
+                    x = parseFloat(x) + xScale(parseFloat(centerX));
+                    y = parseFloat(y) + yScale(parseFloat(centerY));
+
+                    return "translate(" + x + ',' + y + ")"
+                })
+                .attr("r", 1) // ToDo sqrt scale?
+                .attr("fill", function (d, i) {
+                    return colorMap[d[2]];
+                })
+
+        });
+
+
+        return d3n.chartHTML();
     }
 
     vectorialViewDraw(rows, winds) {
-
         new MultiChart('.plot-map', rows, winds);
-        //Plots.quickMultiChart(rows, winds, '.plot-map');
 
         let wcd = (new WindChartData());
 
@@ -197,11 +339,12 @@ class Plots extends Component {
                         me.props.loadWindData(winds);
 
                         if (me.props.view === VECTORIAL) {
-                            //me.vectorialViewDraw(rows, winds)
+                            me.vectorialViewDraw(rows, winds);
 
-                            me.html = Plots.quickMultiChart(rows, winds, '.plot-map');
-                            console.log(me.html);
+                            me.chartHtml = Plots.quickMultiChart (rows, winds, '.plot-map')
 
+                            console.log('chartHtml', me.chartHtml)
+                            me.setState({chartHtml: me.chartHtml});
                         }
 
                     });
@@ -238,7 +381,7 @@ class Plots extends Component {
         }
     }
 
-    render_ = () => {
+    render = () => {
         let text = JSON.stringify(
             {
                 view: this.props.view,
@@ -330,7 +473,42 @@ class Plots extends Component {
             )
         }
 
-        return Plots.getContainer();
+
+        // const options = { selector: '#chart', container: '<div id="container"><div id="chart"></div></div>' }
+        // const d3n = new D3Node(options) // initializes D3 with container element
+        // const d3 = d3n.d3
+        // d3.select(d3n.document.querySelector('#chart')).append('span') // insert span tag into #chart
+        // //return d3n.html()   // output: <html><body><div id="container"><div id="chart"><span></span></div></div></body></html>
+        // let html = d3n.chartHTML()  // output: <div id="chart"><span></span></div>
+        //
+        // console.log(d3n.chartHTML());
+
+
+console.log('chartHtml', this.chartHtml);
+
+
+        // return (<div className="content" dangerouslySetInnerHTML={{__html: this.chartHtml}}></div>)
+
+        return (
+            <div>
+                {/*<div>state: {text}</div>*/}
+                <div className="markdown-body">
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div dangerouslySetInnerHTML={{__html: this.chartHtml}} />
+                                </td>
+                                <td>
+                                    <div className="plot-wind"/>
+                                    <div className="plot-sensor"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        )
     }
 }
 
