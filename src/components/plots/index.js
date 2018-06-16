@@ -205,35 +205,46 @@ class Plots extends Component {
     }
 
     vectorialViewDraw(rows, winds) {
-        new MultiChart('.plot-map', rows, winds);
 
-        let wcd = (new WindChartData());
 
-        winds.slice(1).forEach(function (row) {
-            wcd.collectDataItem(row, DECEMBER)
-        });
+        this.chartHtml = Plots.quickMultiChart (rows, winds, '.plot-map')
 
-        for (let i = 0; i < wcd.cells; i++) wcd.data[i] = wcd.data[i] / wcd.mMax;
+        console.log('chartHtml', this.chartHtml);
+        this.setState({chartHtml: this.chartHtml});
 
-        let data = Object.values(wcd.data);
-
-        new CircularHeatChart('.plot-wind', [data])
-            .setInnerRadius(20)
-            .setRange(["white", "steelblue"])
-            .setRadialLabels(wcd.getRadialLabels())
-            .setSegmentLabels(wcd.getSegmentLabels())
-            .draw();
-
-        // ToDo substitute with sensor plot legend
-        new CircularHeatChart('.plot-sensor', [data])
-            .setInnerRadius(20)
-            .setRange(["white", "steelblue"])
-            .setRadialLabels(wcd.getRadialLabels())
-            .setSegmentLabels(wcd.getSegmentLabels())
-            .draw();
+        // new MultiChart('.plot-map', rows, winds);
+        //
+        // let wcd = (new WindChartData());
+        //
+        // winds.slice(1).forEach(function (row) {
+        //     wcd.collectDataItem(row, DECEMBER)
+        // });
+        //
+        // for (let i = 0; i < wcd.cells; i++) wcd.data[i] = wcd.data[i] / wcd.mMax;
+        //
+        // let data = Object.values(wcd.data);
+        //
+        // new CircularHeatChart('.plot-wind', [data])
+        //     .setInnerRadius(20)
+        //     .setRange(["white", "steelblue"])
+        //     .setRadialLabels(wcd.getRadialLabels())
+        //     .setSegmentLabels(wcd.getSegmentLabels())
+        //     .draw();
+        //
+        // // ToDo substitute with sensor plot legend
+        // new CircularHeatChart('.plot-sensor', [data])
+        //     .setInnerRadius(20)
+        //     .setRange(["white", "steelblue"])
+        //     .setRadialLabels(wcd.getRadialLabels())
+        //     .setSegmentLabels(wcd.getSegmentLabels())
+        //     .draw();
     }
 
     temporalViewDraw(rows) {
+
+        this.setState({chartHtml:null});
+
+        selectAll("svg").remove();
 
         let tr = select(".nine");
 
@@ -340,11 +351,6 @@ class Plots extends Component {
 
                         if (me.props.view === VECTORIAL) {
                             me.vectorialViewDraw(rows, winds);
-
-                            me.chartHtml = Plots.quickMultiChart (rows, winds, '.plot-map')
-
-                            console.log('chartHtml', me.chartHtml)
-                            me.setState({chartHtml: me.chartHtml});
                         }
 
                     });
@@ -353,10 +359,6 @@ class Plots extends Component {
 
     componentDidUpdate(prevProps) {
         // Typical usage (don't forget to compare props):
-        if(this.props.view !== prevProps.view && this.props.view === VECTORIAL) {
-            this.vectorialViewDraw(this.props.data, this.props.winddata)
-        }
-
         if(this.props.view === prevProps.view && this.props.view === TEMPORAL) {
             this.temporalViewUpdate(prevProps)
         }
@@ -367,7 +369,7 @@ class Plots extends Component {
 
         if(this.props.view !== prevProps.view && this.props.view === VECTORIAL) {
             selectAll("svg.multi_chart").remove();
-            new MultiChart('.plot-map', this.props.data, this.props.winddata);
+            this.vectorialViewDraw(this.props.data, this.props.winddata)
         }
 
         if(this.props.chemical !== prevProps.chemical && this.props.view === VECTORIAL) {
@@ -484,7 +486,7 @@ class Plots extends Component {
         // console.log(d3n.chartHTML());
 
 
-console.log('chartHtml', this.chartHtml);
+// console.log('chartHtml', this.chartHtml);
 
 
         // return (<div className="content" dangerouslySetInnerHTML={{__html: this.chartHtml}}></div>)
